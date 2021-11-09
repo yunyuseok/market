@@ -1,0 +1,120 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<div class="contents">
+    <div class="inner-contents">
+        <div id="mainForm">
+            <article id="new">
+                <table>
+                    <caption>
+                        <h3><a href="/mainForum">메인 게시판</a></h3>
+                    </caption>
+                    <colgroup>
+                        <col width="100%"> <!-- title -->
+                    </colgroup>
+                    <tbody>
+                        {% for board in mainBoard %}
+                        <tr>
+                            <input class="board-link-id" type="hidden" value="{{board.id}}">
+                            <td><a class="board-link">{{board.title}}<span>{{board.cCount}}</span></a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </article>
+            
+            <article id="recommend">
+                <table>
+                    <caption>
+                        <h3>요번주 추천글</h3>
+                    </caption>
+                    <colgroup>
+                        <col width="80%"> <!-- title -->
+                        <col width="20%"> <!-- recommend -->
+                    </colgroup>
+                    <tbody>
+                        {% for board in recommendBoard %}
+                        <tr>
+                            <input class="board-link-id" type="hidden" value="{{board.id}}">
+                            <td><a class="board-link">{{board.title}}<span>{{board.cCount}}</span></a></td>
+                            <td>{{board.rCount}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </article>
+
+            <article id="review">
+                <table>
+                    <caption>
+                        <h3>최신 리뷰글</h3>
+                    </caption>
+                    <colgroup>
+                        <col width="80%"> <!-- title -->
+                        <col width="20%"> <!-- recommend -->
+                    </colgroup>
+                    <tbody>
+                        {% for board in reviewBoard %}
+                        <tr>
+                            <input class="board-link-id" type="hidden" value="{{board.id}}">
+                            <td><a class="board-link">{{board.title}}<span>{{board.cCount}}</span></a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </article>
+
+            <article id="rank">
+                <table>
+                    <caption>
+                        <h3>판매랭킹</h3>
+                    </caption>
+                    <colgroup>
+                        <col width="10%"> <!-- rank -->
+                        <col width="70%"> <!-- title -->
+                        <col width="20%"> <!-- total -->
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <td>등수</td>
+                            <td>상품명</td>
+                            <td>총 판매금액</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set i = 1 %}
+                        {% for product in rankProduct %}
+                        <tr>
+                            <td>{{i}}</td>
+                            <td>{{product.name}}</td>
+                            <td>{{product.total}}</td>
+                        </tr>
+                        {% set i = i + 1 %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </article>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    const board_links = document.querySelectorAll(".board-link");
+    
+    function setLink(item) {
+        let boardId = item.parentNode.parentNode;
+        boardId = boardId.children[0].value;
+        item.setAttribute('href', `/board/${boardId}`);
+    }
+
+    if(board_links) {
+        for (let i = 0; i < board_links.length; ++i) {
+            setLink(board_links.item(i));
+        }
+    }
+
+</script>
+{% endblock %}

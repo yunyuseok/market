@@ -1,0 +1,330 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="contents">
+    <div class="inner-contents">
+        <div id="MypageHead">
+            <div class="select">게시글</div>
+            <div class="select">구매기록</div>
+            <div class="select">회원정보수정</div>
+        </div>
+        <div id="MypageBody">
+            <div id="MypageBoard">
+                <div id="gold">소지금 : {{user.money}}</div>
+                <table>
+                    <caption>작성 게시글</caption>
+                    <colgroup>
+                        <col width="10%"> <!-- Kind -->
+                        <col width="50%"> <!-- Title -->
+                        <col width="20%"> <!-- Date -->
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <td>종류</td>
+                            <td>제목</td>
+                            <td>등록일</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for board in user.Boards %}
+                        <tr>
+                            <td class="board-kind">{{board.kind}}</td>
+                            <td class="board-title">
+                                <a class="board-link">{{board.title}}</a>
+                            </td>
+                            <td class="board-date">{{board.createdAt}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div id="MypagePurchaseProduct">
+                <table>
+                    <caption>구매기록</caption>
+                    <colgroup>
+                        <col width="15%">
+                        <col width="15%">
+                        <col width="20%">
+                        <col width="20%">
+                        <col width="15%">
+                        <col width="15%">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <td>구매상품</td>
+                            <td>판매자</td>
+                            <td>구매금액</td>
+                            <td>수량</td>
+                            <td>총 금액</td>
+                            <td>구매날짜</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in sellLog %}
+                        <tr>
+                            <td>{{log.name}}</td>
+                            <td>{{log.nick}}</td>
+                            <td>{{log.price}}</td>
+                            <td>{{log.count}}</td>
+                            <td>{{log.price * log.count}}</td>
+                            <td class="board-date">{{log.createdAt}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div id="MypageInfo">
+                <table>
+                    <caption>회원정보</caption>
+                    <colgroup>
+                        <col width="15%">
+                        <col width="85%">
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <td>아이디</td>
+                            <td>{{user.email}}</td>
+                        </tr>
+                        <tr>
+                            <td>닉네임</td>
+                            <td>{{user.nick}}</td>
+                        </tr>
+                        <tr>
+                            <td>닉네임 수정</td>
+                            <td>
+                                <input id="nickAmendText" type="text">
+                                <input id="nickAmendBtn" type="button" value="수정하기">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>주소</td>
+                            <td>{{user.address}}</td>
+                        </tr>
+                        <tr>
+                            <td>주소 수정</td>
+                            <td>
+                                <input id="addressAmendText" type="text">
+                                <input id="addressAmendBtn" type="button" value="수정하기">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>소지금</td>
+                            <td>{{user.money}}</td>
+                        </tr>
+                        <tr>
+                            <td>소지금 충전</td>
+                            <td>
+                                <input id="addMoney" type="text">
+                                <input id="addMoneyBtn" type="button" value="충전하기">
+                            </td>
+                        </tr>
+                        {% if user.seller === "no" %}
+                        <tr>
+                            <td>판매자 등록</td>
+                            <td><input id="sellerRegisterBtn" type="button" value="판매자 등록"></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td>등록된 상품</td>
+                            <td>
+                                <select class="productList" name="product">
+                                    {% for product in user.Products %}
+                                    <option value="product.name">{{product.name}} / {{product.price}}원 / {{product.count}}개
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <input id="productDeleteBtn" type="button" value="삭제">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>상품등록</td>
+                            <td>
+                                <input id="productName" type="text" placeholder="상품명">
+                                <br>
+                                <input id="productPrice" type="text" placeholder="가격">
+                                <br>
+                                <input id="productCount" type="text" placeholder="수량">
+                                <br>
+                                <input id="productBtn" type="button" value="상품등록">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>판매자 취소</td>
+                            <td class=><input id="sellerCancelBtn" type="button" value="판매자 취소"></td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+                <input type="button" value="탈퇴하기">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    function setDate(item) {
+        let time = new Date(item.innerHTML);
+        const month = ('0' + (time.getMonth() + 1)).slice(-2);
+        const day = ('0' + time.getDate()).slice(-2);
+        const hour = ('0' + time.getHours()).slice(-2);
+        const min = ('0' + time.getMinutes()).slice(-2);
+        item.innerHTML = month + "월-" + day + "일 " + hour + "-" + min;
+    }
+
+    // 초기세팅
+    (() => {
+        const kinds = document.querySelectorAll(".board-kind");
+        const dates = document.querySelectorAll(".board-date");
+        const board = document.querySelectorAll("#MypageHead .select")[0];
+        const PurchaseProduct = document.querySelectorAll("#MypageHead .select")[1];
+        const info = document.querySelectorAll("#MypageHead .select")[2];
+
+        const nickAmendBtn = document.querySelector("#nickAmendBtn");
+        const addressAmendBtn = document.querySelector("#addressAmendBtn");
+        const sellerRegisterBtn = document.querySelector("#sellerRegisterBtn");
+        const sellerCancelBtn = document.querySelector("#sellerCancelBtn");
+
+        const addMoneyBtn = document.querySelector("#addMoneyBtn");
+        const addProductBtn = document.querySelector("#productBtn");
+        const productDeleteBtn = document.querySelector("#productDeleteBtn");
+
+        for (kind of kinds) {
+            kind.innerHTML = kind.innerHTML === "sell" ? "판매" : "리뷰";
+        }
+
+        for (date of dates) {
+            setDate(date);
+        }
+
+        board.addEventListener("click", (event) => {
+            document.querySelector("#MypageBoard").style.display = "block";
+            document.querySelector("#MypagePurchaseProduct").style.display = "none";
+            document.querySelector("#MypageInfo").style.display = "none";
+        });
+
+        PurchaseProduct.addEventListener("click", (event) => {
+            document.querySelector("#MypageBoard").style.display = "none";
+            document.querySelector("#MypagePurchaseProduct").style.display = "block";
+            document.querySelector("#MypageInfo").style.display = "none";
+        })
+
+        info.addEventListener("click", (event) => {
+            document.querySelector("#MypageBoard").style.display = "none";
+            document.querySelector("#MypagePurchaseProduct").style.display = "none";
+            document.querySelector("#MypageInfo").style.display = "block";
+        });
+
+        nickAmendBtn.addEventListener("click", (event) => {
+            const nickValue = document.querySelector("#nickAmendText").value;
+            axios.put("/mypage/nickAmend", {
+                nickValue
+            }).then((message) => {
+                if (message.data === "fail") {
+                    alert("중복된 닉네임이 있습니다.");
+                } else {
+                    alert("닉네임이 변경되었습니다.");
+                    location.reload();
+                }
+            }).catch((err) => {
+                console.error(err);
+            })
+        });
+
+        addressAmendBtn.addEventListener("click", (event) => {
+            const addressValue = document.querySelector("#addressAmendText").value;
+            axios.put("/mypage/addressAmend", {
+                addressValue
+            }).then((message) => {
+                alert("주소가 변경되었습니다.");
+                location.reload();
+            }).catch((err) => {
+                console.error(err);
+            })
+        });
+
+        addMoneyBtn.addEventListener("click", (event) => {
+            const addMoney = document.querySelector("#addMoney").value;
+            axios.put("/mypage/addMoney", {
+                addMoney
+            }).then(() => {
+                alert("충전되었습니다.");
+                location.reload();
+            }).catch((err) => {
+                console.error(err);
+            })
+        });
+
+        if (productDeleteBtn) {
+            productDeleteBtn.addEventListener("click", (evnet) => {
+                const goodsList = document.querySelector(".productList");
+                // 리스트 옵션이 있으면
+                if (goodsList.length) {
+                    const index = goodsList.selectedIndex;
+                    const text = goodsList.options[index].text;
+                    console.log(text);
+                    axios.delete("/mypage/productDelete", {
+                        data: {
+                            text
+                        }
+                    })
+                        .then(() => {
+                            alert("등록물품이 삭제되었습니다.");
+                            goodsList.remove(goodsList.options[index]);
+                        }).catch((err) => {
+                            console.error(err);
+                        })
+                }
+            })
+        }
+
+        if (sellerRegisterBtn) {
+            sellerRegisterBtn.addEventListener("click", (event) => {
+                axios.put("/mypage/sellerRegister")
+                    .then((message) => {
+                        alert("판매자 신청이 완료되었습니다.");
+                        location.reload();
+                    }).catch((err) => {
+                        console.error(err);
+                    })
+            })
+        }
+
+        if (sellerCancelBtn) {
+            sellerCancelBtn.addEventListener("click", (event) => {
+                axios.put("/mypage/sellerCancel")
+                    .then((message) => {
+                        alert("판매자 자격이 취소되었습니다.");
+                        location.reload();
+                    }).catch((err) => {
+                        console.error(err);
+                    })
+            })
+        }
+
+        if (addProductBtn) {
+            addProductBtn.addEventListener("click", (event) => {
+                const name = document.querySelector("#productName").value;
+                const price = document.querySelector("#productPrice").value;
+                const count = document.querySelector("#productCount").value;
+                axios.put("/mypage/addProduct", {
+                    name,
+                    price,
+                    count
+                }).then(() => {
+                    const goodsList = document.querySelector(".productList");
+                    const option = document.createElement("option");
+                    option.value = `${name}`;
+                    option.innerText = `${name} / ${price}원 / ${count}개`;
+                    goodsList.appendChild(option);
+                }).catch((err) => {
+                    console.error(err);
+                })
+            })
+        }
+
+    })();
+
+</script>
+{% endblock %}

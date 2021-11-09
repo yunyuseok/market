@@ -1,0 +1,167 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<div class="contents">
+    <div class="inner-contents">
+        <div class="forum">
+            <div class="forum-box1">
+                <a href="/boardWrite">게시글 쓰기</a>
+            </div>
+            <div class="forum-box2">
+                <input id="currentPage" type="hidden" value="{{currentPage}}">
+                <table>
+                    <caption>게시글</caption>
+                    <colgroup>
+                        <col width="10%"> <!-- Number -->
+                        <col width="15%"> <!-- Kind -->
+                        <col width="30%"> <!-- Title -->
+                        <col width="10%"> <!-- author -->
+                        <col width="20%"> <!-- Date -->
+                        <col width="15%"> <!-- Recommend -->
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <td>번호</td>
+                            <td>종류</td>
+                            <td>제목</td>
+                            <td>등록자</td>
+                            <td>등록일</td>
+                            <td>추천수</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for board in boards %}
+                        <tr>
+                            <td class="board-num">{{board.id}}</td>
+                            <td class="board-kind">{{board.kind}}</td>
+                            <td class="board-title">
+                                <a class="board-link">{{board.title}}</a>
+                            </td>
+                            <td class="board-author">{{board.uNick}}</td>
+                            <td class="board-date">{{board.createdAt}}</td>
+                            <td class="board-recommend">{{board.rCount}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="forum-box3">
+                <ul>
+                    {% set num = 1 %}
+                    {% for i in maxPage %}
+                    <li><a>{{num}}</a></li>
+                    {% set num = num + 1 %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    function setDate(item) {
+        let time = new Date(item.innerHTML);
+        const month = ('0' + (time.getMonth() + 1)).slice(-2);
+        const day = ('0' + time.getDate()).slice(-2);
+        const hour = ('0' + time.getHours()).slice(-2);
+        const min = ('0' + time.getMinutes()).slice(-2);
+        item.innerHTML = month + "월-" + day + "일 " + hour + "-" + min;
+    }
+
+    function setKind(item) {
+        if (item.innerHTML === "sell") {
+            item.innerHTML = "판매";
+        } else {
+            item.innerHTML = "리뷰"
+        }
+    }
+
+    function setLink(item) {
+        let boardId = item.parentNode.parentNode;
+        boardId = boardId.childNodes[1].innerHTML;
+        item.setAttribute('href', `/board/${boardId}`);
+    }
+
+    if (document.querySelector("tbody tr")) {
+        const board_dates = document.querySelectorAll(".board-date");
+        const board_kinds = document.querySelectorAll(".board-kind");
+        const board_links = document.querySelectorAll(".board-link");
+
+        const length = document.querySelectorAll("tbody tr").length;
+
+        for (let i = 0; i < length; ++i) {
+            setDate(board_dates.item(i));
+            setKind(board_kinds.item(i));
+            setLink(board_links.item(i));
+        }
+    }
+
+    (() => {
+        const pagination = document.querySelectorAll(".forum-box3 ul li");
+        for (button of pagination) {
+            button.addEventListener("click", (event) => {
+                const curage = document.querySelector("#currentPage").value;
+                const selectPage = event.target.innerHTML - 1;
+                if (curage == (selectPage)) {
+                    return;
+                }
+                axios.patch(`/mainForum`, {
+                    selectPage,
+                })
+                    .then((boardsdata) => {
+                        const { boards, maxPage, currentPage } = boardsdata.data;
+                        const changeBoards = document.querySelectorAll(".forum-box2 tbody tr");
+
+                        for (let i = 0; i < boards.length; ++i) {
+                            changeBoards[i].style.display = "table-row";
+                            changeBoards[i].children[0].innerHTML = boards[i].id;
+                            changeBoards[i].children[1].innerHTML = boards[i].kind === "sell" ? "판매" : "리뷰";
+                            changeBoards[i].children[2].firstElementChild.innerHTML = boards[i].title;
+                            changeBoards[i].children[2].firstElementChild.href = `/board/${boards[i].id}`
+                            changeBoards[i].children[3].innerHTML = boards[i].User.nick;
+                            changeBoards[i].children[4].innerHTML = boards[i].createdAt;
+                            setDate(changeBoards[i].children[4]);
+                            changeBoards[i].children[5].innerHTML = boards[i].Recommends.length;
+                        }
+
+                        for(let i = boards.length; i < 10; ++i) {
+                            changeBoards[i].style.display = "none";
+                        }
+
+                        // 페이지네이션 수정
+                        if (pagination.length !== maxPage.length) {
+                            if (pagination.length > maxPage.length) {
+                                // 페이지네이션이 최대 페이지네이션보다 크면 가장 끝에 있는 페이지네이션 삭제
+                                pagination.parentNode.removeChild(pagination[pagination.length - 1]);
+                            } else if (pagination.length < maxPage.length) {
+                                // 페이지네이션보다 최대 페이지네이션이 크면 추가
+                                const li = document.createElement("li");
+                                const a = document.createElement("a");
+
+                                a.innerText = maxPage.length;
+                                li.appendChild(a);
+                                pagination.appendChild(li);
+                            }
+                        }
+
+                        // 현재 페이지 수정
+                        document.querySelector("#currentPage").value = currentPage;
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                    })
+            })
+        }
+    })();
+
+    window.onload = () => {
+        if (new URL(location.href).searchParams.get('loginError')) {
+            alert(new URL(location.href).searchParams.get('loginError'));
+        }
+    };
+</script>
+{% endblock %}

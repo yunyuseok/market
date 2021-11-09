@@ -1,0 +1,45 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="contents">
+  <div class="inner-contents">
+    <div class="joinWrap">
+      <h2>회원가입</h2>
+
+      <form id="join-form" action="/auth/join" method="post">
+        <div class="input-group">
+          <input id="join-email" type="email" name="email" placeholder="email" required autofocus>
+          <label for="join-email">이메일</label>
+        </div>
+        <div class="input-group">
+          <input id="join-nick" type="text" name="nick" placeholder="nick" required>
+          <label for="join-nick">닉네임</label>
+        </div>
+        <div class="input-group">
+          <input id="join-password" type="password" name="password" placeholder="비밀번호" required>
+          <label for="join-password">비밀번호</label>
+        </div>
+        <div class="input-group">
+          <input id="join-address" type="address" name="address" placeholder=주소" required>
+          <label for="join-address">주소</label>
+        </div>
+        <a id="kakao" href="/auth/kakao" class="btn">카카오톡</a>
+        <button id="join-btn" type="submit" class="btn">완료</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  window.onload = () => {
+    const errMessage = new URL(location.href).searchParams.get('error');
+    if (errMessage === "email_Overrap") {
+      alert("중복된 이메일입니다.");
+    } else if(errMessage === "nick_Overrap") {
+      alert("중복된 닉네임입니다.");
+    }
+  };
+</script>
+{% endblock %}

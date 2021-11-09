@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<div class="contents">
+    <div class="inner-contents">
+        <div class="loginWrap">
+            <h2>로그인</h2>
+            <form id="login-form" action="/auth/login" method="post">
+                <div class="input-group">
+                    <input id="email" type="email" name="email" placeholder="아이디" required autofocus>
+                    <label for="email">이메일</label>
+                </div>
+                <div class="input-group">
+                    <input id="password" type="password" name="password" placeholder="비밀번호" required>
+                    <label for="password">비밀번호</label>
+                </div>
+                <input id="login" type="submit" value="로그인" class="btn">
+                <a id="kakao" href="/auth/kakao" class="btn">카카오톡</a>
+                <a id="join" href="/join" class="btn">회원가입</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    window.onload = () => {
+    if (new URL(location.href).searchParams.get('loginError')) {
+      alert(new URL(location.href).searchParams.get('loginError'));
+    }
+  };
+</script>
+{% endblock %}

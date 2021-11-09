@@ -1,0 +1,173 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="contents">
+    <div class="inner-contents">
+        <form id="board-form" class="boardBack" action="/board" method="post" enctype="multipart/form-data">
+            <div class="board-group">
+                <div class="boardHead">
+                    {% if board.title %}
+                    <input id="boardTitle" type="text" name="boardTitle" maxlength="20" placeholder="제목"
+                        value="{{board.title}}">
+                    {% else %}
+                    <input id="boardTitle" type="text" name="boardTitle" maxlength="20" placeholder="제목">
+                    {% endif %}
+                    <select class="boardkind" name="boardKind">
+                        <option value="review">리뷰</option>
+                        {% if user.seller == "yes" or board.User.seller == "yes" %}
+                        <option value="sell">판매</option>
+                        {% endif %}
+                    </select>
+                    <br>
+                    <div id="sellProduct" style="display: none;">
+                        <span>판매상품</span>
+                        <!-- 위에는 그냥 글쓸때 , elseif는 수정중일때 -->
+                        <select class="productList" name="product">
+                            {% if user.seller %}
+                                {% for product in user.Products %}
+                                    <option value="{{product.name}} {{product.price}} {{product.count}}">{{product.name}} / {{product.price}}원 / {{product.count}}개</option>
+                                {% endfor %}
+                            {% elseif board.User.seller %}
+                                {% for product in products %}
+                                        <option value="{{product.name}} {{product.price}} {{product.count}}">{{product.name}} / {{product.price}}원 / {{product.count}}개</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <input id="boardId" name="boardId" type="hidden" value="{{board.id}}">
+                </div>
+                <div class="boardBody">
+                    {% if board.content %}
+                    <textarea id="boardContent" name="boardContent"
+                        placeholder="내용을 입력해주세요.">{{board.content}}</textarea>
+                    {% else %}
+                    <textarea id="boardContent" name="boardContent" placeholder="내용을 입력해주세요."></textarea>
+                    {% endif %}
+                </div>
+                <div class="img-preview">
+                    {% for img in images %}
+                    <div class="imgBox" style="display: inline;">
+                        <img src="{{img.filename}}" width="250" alt="미리보기">
+                        <input class="imgUrl" type="hidden" name="url" value="{{img.filename}}">
+                    </div>
+                    {% endfor %}
+                    <input id="urlCount" name="urlCount" type="hidden" value="0">
+                </div>
+            </div>
+            <div class="postBtnBox">
+                <div>
+                    <label id="imgUploads-label" for="imgUploads">사진 업로드</label>
+                    <input id="imgUploads" multiple="multiple" type="file" accept="image/*">
+                </div>
+                <button id="board-btn" type="submit" class="btn">등록</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+
+<script>
+    function startSetting() {
+        const preImgUrl = document.querySelectorAll(".imgUrl");
+        const imgCount = document.querySelector("#urlCount");
+
+        const boardkind = document.querySelector(".boardkind");
+
+        if(boardkind) {
+            boardkind.addEventListener("change", (event) => {
+                const currIndex = boardkind.selectedIndex;
+                if(boardkind.options[currIndex].value === "sell") {
+                    document.querySelector("#sellProduct").style.display = "block";
+                } else {
+                    document.querySelector("#sellProduct").style.display = "none";
+                }
+            })
+        }
+
+        let i = 0;
+
+        for (imgUrl of preImgUrl) {
+            imgUrl.name = `url${i}`;
+            ++i;
+        }
+        imgCount.value = i;
+
+    }
+
+    function deleteChildFunc(parent, deleteChild, cb) {
+        if (deleteChild && cb(deleteChild)) {
+            parent.removeChild(deleteChild);
+            deleteChildFunc(parent, parent.firstElementChild, cb);
+        }
+    }
+
+    startSetting();
+    if (document.getElementById('imgUploads')) {
+        document.getElementById('imgUploads').addEventListener('change', function (e) {
+            const formData = new FormData();
+            // 파일이 없으면 리턴
+            if (!this.files.length) {
+                alert("선택된 이미지가 없습니다.");
+                return;
+            } else if (this.files.length > 3) {
+                alert("최대 3개까지 가능합니다.");
+                return;
+            } else {
+                for (let i = 0; i < this.files.length; ++i) {
+                    formData.append('img', this.files[i]);
+                }
+            }
+
+            axios.post('/board/img', formData)
+                .then((res) => {
+                    const imgPreview = document.querySelector(".img-preview");
+                    if (!imgPreview) {
+                        return;
+                    }
+
+                    // 이전에 있던 얘들 삭제해야함.
+                    deleteChildFunc(imgPreview, imgPreview.firstElementChild, (element) => {
+                        return element.nodeName !== "INPUT" ? true : false;
+                    });
+                    let i = 0;
+                    for (const url in res.data) {
+                        const imgBox = document.createElement("div");
+                        const img = document.createElement("img");
+                        const imgUrl = document.createElement("input");
+
+                        img.src = res.data[url];
+                        img.alt = "미리보기";
+                        img.width = 250;
+
+                        imgUrl.value = res.data[url];
+                        imgUrl.name = `url${i}`;
+                        imgUrl.type = "hidden";
+
+                        imgBox.style.display = "inline";
+                        imgBox.className = "imgBox";
+
+                        imgBox.appendChild(img);
+                        imgBox.appendChild(imgUrl);
+                        imgPreview.appendChild(imgBox);
+
+                        ++i;
+                    }
+                    const imgCount = document.querySelector("#urlCount");
+                    imgCount.value = i;
+                })
+                .catch((err) => {
+                    console.error(err);
+                });
+        });
+    }
+
+    window.onload = () => {
+        if (new URL(location.href).searchParams.get('loginError')) {
+            alert(new URL(location.href).searchParams.get('loginError'));
+        }
+    };
+
+</script>
+{% endblock %}

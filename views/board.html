@@ -1,0 +1,406 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="contents">
+    <div class="inner-contents">
+        <div class="board-group">
+            <div class="boardBack">
+                <div class="titleHead">
+                    <div class="boardHead">
+                        <h1>{{board.title}}</h1>
+                        <input id="boardId" type="hidden" value="{{board.id}}">
+                        <input id="boardWriterId" type="hidden" value="{{board.UserId}}">
+                        {% if board.kind === "sell" %}
+                        <input class="board-kind" type="text" value="판매글" style="background-color: white;" disabled>
+                        {% else %}
+                        <input class="board-kind" type="text" value="리뷰글" style="background-color: white;" disabled>
+                        {% endif %}
+                        </select>
+                    </div>
+                    <div>
+                        <div class="board-author">
+                            작성자 : {{board.User.nick}}
+                        </div>
+                        <div class="board-created">
+                            {{board.createdAt}}
+                        </div>
+                    </div>
+                </div>
+                <div class="boardBody">
+                    <p>{{board.content}}</p>
+                </div>
+                <div class="img-preview">
+                    {% for img in images %}
+                    <div class="imgBox" style="display: inline;">
+                        <img src="{{img.filename}}" width="250" alt="미리보기">
+                        <input class="imgUrl" type="hidden" name="url" value="{{img.filename}}">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if user.id and board.kind == "sell" %}
+                <div class="sell">
+                    <div>판매 물건 : {{board.Product.name}}</div>
+                    <div>가격 : {{board.Product.price}}</div>
+                    <div>남은 수량 : {{board.Product.count}}</div>
+                    <div>구매 개수<input type="number" class="productCountValue" value="1" min="1"></div>
+                    <div>가진 금액 : {{board.User.money}}</div>
+                    <input id="buyBtn" type="button" value="구매">
+                </div>
+                {% endif %}
+                <div class="recommend">
+                    {% if user and user.id %}
+                    {% if recommend %}
+                    <button id="recommend-btn" class="recommend-cancel">
+                        {{board.Recommends.length}}<br>
+                        추천 취소
+                    </button>
+                    {% else %}
+                    <button id="recommend-btn" class="recommend-ok">
+                        {{board.Recommends.length}}<br>
+                        추천
+                    </button>
+                    {% endif %}
+                    {% else %}
+                    <button id="recommend-btn" class="recommend-notLogin">
+                        {{board.Recommends.length}}<br>
+                        추천
+                    </button>
+                    {% endif %}
+                </div>
+                {% if user and user.id === board.UserId %}
+                <div class="board-setBox">
+                    <button class="delete-btn">삭제</button>
+                    <button class="update-btn"><a>수정</a></button>
+                </div>
+                {% endif %}
+                <div class="comment-box">
+                    {% if comments %}
+                    {% for comment in comments %}
+                    {% if comment.parent === null %}
+                    <div class="comment">
+                        <div>
+                            <strong><span class="nickname">{{comment.nick}}</span></strong>
+                            <span class="date">{{comment.updatedAt}}</span>
+                            <input class="comment-id" type="hidden" value="{{comment.id}}">
+                            <input class="comment-writer" type="hidden" value="{{comment.UserId}}">
+                        </div>
+                        <div class="comment-content">
+                            <span>{{comment.content}}</span>
+                        </div>
+                        <div class="comment-reply">
+                            <button>답글</button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="commentReply">
+                        <div class="commentReply-head">
+                            <strong><span class="nickname">{{comment.nick}}</span></strong>
+                            <span class="date">{{comment.updatedAt}}</span>
+                            <input class="comment-id" type="hidden" value="{{comment.id}}">
+                            <input class="comment-writer" type="hidden" value="{{comment.UserId}}">
+                            <input class="comment-parent" type="hidden" value="{{comment.parent}}">
+                        </div>
+                        <div class="comment-content">
+                            <span class="target">{{comment.targetNick}}</span>
+                            <span> {{comment.content}}</span>
+                        </div>
+                        <div class="comment-reply">
+                            <button>답글</button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    {% if user %}
+                    <form id="comment-form" action="/board/comment" method="post">
+                        <div class="writeComment">
+                            <sapn class="nickname">{{user.nick}}</sapn>
+                            <textarea name="commentContent" placeholder="댓글을 작성해주세요!"></textarea>
+                            <button type="submit">등록</button>
+                            <input name="boardId" type="hidden" value="{{board.id}}">
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    const board_date = document.querySelector(".board-created");
+
+    const recommendOkBtn = document.querySelector(".recommend-ok");
+    const recommendCancelBtn = document.querySelector(".recommend-cancel");
+    const recommendNotLoginBtn = document.querySelector(".recommend-notLogin");
+
+    const updatelink = document.querySelector(".update-btn a");
+    const deleteBtn = document.querySelector(".delete-btn");
+
+    const boardId = document.querySelector("#boardId").value;
+    const writerId = document.querySelector("#boardWriterId").value;//글쓴이
+    const userId = document.querySelector("#User-id")?.value;    // 로그인 유저
+
+    const commentTime = document.querySelectorAll(".comment .date");
+    const commentReplyTime = document.querySelectorAll(".commentReply .date");
+    const commentReplys = document.querySelectorAll(".commentReply");
+    const commentReplysButton = document.querySelectorAll(".comment-reply button");
+
+    const buyBtn = document.querySelector("#buyBtn");
+
+    const preImgUrl = document.querySelectorAll(".imgUrl");
+    let i = 0;
+
+    for (imgUrl of preImgUrl) {
+        imgUrl.name = `url${i}`;
+        ++i;
+    }
+
+    // 대댓글 창 만들기
+    (function initCreateCommentForm() {
+        // 댓글이 없으면 끝냄.
+        const firstComment = document.querySelector(".comment");
+        if (!firstComment) {
+            return;
+        }
+
+        // 댓글이 있으면 만듬.
+        const form = document.createElement("form");
+        const writeCommentReply = document.createElement("div");
+        const nick = document.createElement("span");
+        const content = document.createElement("textarea");
+        const button = document.createElement("button");
+        const boardId = document.createElement("input");
+        const parentId = document.createElement("input");
+        const targetId = document.createElement("input");
+
+        form.id = "comment-formReply";
+        form.action = "/board/commentReply";
+        form.method = "post";
+        form.style.display = "none";
+
+        writeCommentReply.className = "writeComment";
+
+        nick.className = "nickname";
+        nick.innerHTML = document.querySelector(".nickname")?.innerHTML;
+
+        content.name = "commentContent";
+        content.placeholder = "댓글을 작성해주세요!";
+
+        button.type = "submit";
+        button.textContent = "등록";
+
+        boardId.name = "boardId";
+        boardId.type = "hidden";
+        boardId.value = document.querySelector(".writeComment input")?.value;
+
+        parentId.name = "parent";
+        parentId.type = "hidden";
+        parentId.value = 0;
+
+        targetId.name = "target";
+        targetId.type = "hidden";
+        targetId.value = null;
+
+        firstComment.appendChild(form);
+        form.appendChild(writeCommentReply);
+        writeCommentReply.appendChild(nick);
+        writeCommentReply.appendChild(content);
+        writeCommentReply.appendChild(button);
+        writeCommentReply.appendChild(boardId);
+        writeCommentReply.appendChild(parentId);
+        writeCommentReply.appendChild(targetId);
+    })();
+
+    // 대댓창 보이기
+    function moveCommentFormToReply(event) {
+        // 기존 댓글창 안보이게 하고
+        const commentForm = document.querySelector("#comment-form");
+        commentForm.style.display = "none";
+        // 대댓글창 보이게 함.
+        const commentReplyForm = document.querySelector("#comment-formReply");
+        commentReplyForm.style.display = "block";
+        // 부모노드
+        let parentNode = commentReplyForm.parentNode;
+        const replyParent = document.querySelector("#comment-formReply .writeComment").children[4];
+        const replyTarget = document.querySelector("#comment-formReply .writeComment").children[5];
+        const commentDiv = event.target.parentNode.parentNode;
+        replyParent.value = commentDiv.children[0].children[2].value;
+        replyTarget.value = commentDiv.children[0].children[3].value;
+
+        event.target.removeEventListener("click", moveCommentFormToReply);
+        event.target.addEventListener("click", moveCommenFormToBox);
+
+        parentNode.removeChild(commentReplyForm);           // 부모노드에서 자르고
+        commentDiv.appendChild(commentReplyForm);           // 이벤트 부모트리에 붙이기
+    }
+
+    // 댓글창 보이기
+    function moveCommenFormToBox(event) {
+        // 기존 댓글창 보이고
+        const commentForm = document.querySelector("#comment-form");
+        commentForm.style.display = "block";
+        // 대댓글창 안보이게 함.
+        const commentReplyForm = document.querySelector("#comment-formReply");
+        commentReplyForm.style.display = "none";
+
+        event.target.removeEventListener("click", moveCommenFormToBox);
+        event.target.addEventListener("click", moveCommentFormToReply);
+    }
+
+    // 대댓글 버튼 이벤트 추가
+    for (button of commentReplysButton) {
+        if(document.querySelector("#User-id")) {
+            button.addEventListener("click", moveCommentFormToReply);
+        }
+    }
+
+    function setTime(time = "") {
+        let newTime = new Date(time);
+        const month = ('0' + (newTime.getMonth() + 1)).slice(-2);
+        const day = ('0' + newTime.getDate()).slice(-2);
+        const hour = ('0' + newTime.getHours()).slice(-2);
+        const min = ('0' + newTime.getMinutes()).slice(-2);
+        return {
+            month,
+            day,
+            hour,
+            min
+        }
+    }
+
+    // 대댓글 위치 조정
+    if (commentReplys) {
+        // 부모 노드에서 다 자르고
+        commentReplys.forEach((reply) => {
+            reply.parentElement.removeChild(reply);
+        });
+        const commentBox = document.querySelector(".comment-box");
+        for (const comment of commentBox.children) {
+            for (const repls of commentReplys) {
+                if (comment.children[0].children[2].value ===
+                    repls.children[0].children[4].value) {
+                    comment.insertAdjacentElement("afterend", repls);
+                }
+            }
+        }
+    }
+
+    // 게시글 작성시간 수정
+    if (board_date) {
+        const dateTime = setTime(board_date.innerText);
+        board_date.innerHTML = `작성시간 : ${dateTime.month}월-${dateTime.day}일 ${dateTime.hour}:${dateTime.min}`;
+    }
+
+    // 추천주기
+    if (recommendOkBtn) {
+        recommendOkBtn.addEventListener("click", function () {
+            axios.put(`/board/${boardId}/recommend`)
+                .then(() => {
+                    location.reload();
+                })
+                .catch((err) => {
+                    console.error(err);
+                })
+        })
+    }
+    // 추천 취소
+    else if (recommendCancelBtn) {
+        recommendCancelBtn.addEventListener("click", function () {
+            axios.delete(`/board/${boardId}/recommendCancel`)
+                .then(() => {
+                    location.reload();
+                })
+                .catch((err) => {
+                    console.error(err);
+                })
+        })
+    }
+    // 로그인 안했을 때
+    else if (recommendNotLoginBtn) {
+        recommendNotLoginBtn.addEventListener("click", function () {
+            alert("로그인 후 이용해주세요.");
+        })
+    }
+
+    // 게시글 버튼 이벤트 추가
+    if (userId && writerId && (userId === writerId)) {
+        // 게시글 수정
+        if (updatelink) {
+            updatelink.setAttribute("href", `/board/update/${boardId}`);
+        }
+        // 게시글 삭제
+        if (deleteBtn) {
+            deleteBtn.addEventListener("click", function () {
+                if (confirm("게시글을 삭제하겠습니까?")) {
+                    axios.delete(`/board/${boardId}/delete`) //게시글 id
+                        .then(() => {
+                            location.assign("/mainForum");
+                        })
+                        .catch((err) => {
+                            console.error(err);
+                        })
+                }
+            });
+        }
+    }
+
+    // 댓글 날짜 수정
+    if (commentTime) {
+        commentTime.forEach((time) => {
+            const dateTime = setTime(time.innerText);
+            time.innerHTML = `${dateTime.month}-${dateTime.day} ${dateTime.hour}:${dateTime.min}`;
+        })
+    }
+
+    if (commentReplyTime) {
+        commentReplyTime.forEach((time) => {
+            const dateTime = setTime(time.innerText);
+            time.innerHTML = `${dateTime.month}-${dateTime.day} ${dateTime.hour}:${dateTime.min}`;
+        })
+
+    }
+
+    if (buyBtn) {
+        buyBtn.addEventListener("click", (event) => {
+            const divs = document.querySelectorAll(".sell div");
+            const name = encodeURIComponent(divs[0].innerText.split(":")[1].trim());
+            const price = divs[1].innerText.replace(/[^0-9]/g, "");
+            const count = divs[3].querySelector("input").value;
+            axios.put("/board/buyProduct", {
+                name,
+                price,
+                count
+             }).then((result) => {
+                const text = result.data;
+                switch(text) {
+                    case "find Not Goods": 
+                    alert("물건을 찾을데 실패하였습니다.");
+                    break;
+                    case "goods lack": 
+                    alert("물건의 수량이 부족합니다.");
+                    break;
+                    case "lack of money": 
+                    alert("금액이 부족합니다.");
+                    break;
+                    default:
+                    alert("물건을 구매했습니다.");
+                    break;
+                }
+                location.reload();
+            }).catch((err) => {
+                 console.error(err);
+            });
+        });
+    }
+
+    window.onload = () => {
+        if (new URL(location.href).searchParams.get('loginError')) {
+            alert(new URL(location.href).searchParams.get('loginError'));
+        }
+    };
+
+</script>
+{% endblock %}

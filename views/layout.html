@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{title}}</title>
+
+    <meta name="author" content="yunyuseok">
+    <meta name="reply-to" content="sayarn960@naver.com">
+    <meta name="generator" content="vscode">
+
+    <!-- font -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css"
+        type="text/css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <div class="wrapper">
+        <header>
+            <div class="inner-header">
+                <div class="header-bundle">
+                    <div class="header-site">
+                        <h1><a href="/">Market</a></h1>
+                    </div>
+
+                    <div class="header-search">
+                        <form id="search-form" action="/search" method="post">
+                            <input type="text" id="search-bar" placeholder="검색" name="searchAs">
+                            <button type="submit" id="search-btn">
+                                <i class="fa fa-search" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <nav id="menu">
+                        <div class="inner-menu">
+                            <ul>
+                                {% if user and user.id %}
+                                <input id="User-id" type="hidden" value="{{user.id}}">
+                                <li><a class="menu_nick">{{user.nick}}님</a></li>
+                                <li><a id="logout" href="/auth/logout">로그아웃</a></li>
+                                {% else %}
+                                <li><a id="login" href="/login">로그인</a></li>
+                                {% endif %}
+                                <li><a id="join" href="/join">회원가입</a></li>
+                                <li><a id="mypage" href="/mypage">마이페이지</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                    <div>
+                        <!-- 더미 -->
+                    </div>
+                </div>
+            </div>
+        </header>
+        {% block content %}
+        {% endblock %}
+        <footer class="footer">
+            <div class="inner-footer">
+                <p>Copyright &copy; Market</p>
+                <p>Email : sayarn960@naver.com</p>
+                <p>vsCode, Node.js, Mysql</p>
+            </div>
+        </footer>
+    </div>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    {% block script %}
+    {% endblock %}
+</body>
+
+</html>
