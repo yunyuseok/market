@@ -63,11 +63,13 @@ router.get("/board/:id", async (req, res, next) => {
         "UserId",
       ],
     });
-
-    const userInfo = await User.findOne({
-      where: { id: req.user.id },
-      attributes: ["id", "nick", "money"],
-    });
+    let userInfo = null;
+    if (req.user) {
+      userInfo = await User.findOne({
+        where: { id: req.user.id },
+        attributes: ["id", "nick", "money"],
+      });
+    }
 
     const images = await Image.findAll({
       where: { BoardId: req.params.id },
