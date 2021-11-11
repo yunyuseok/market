@@ -30,10 +30,11 @@ router.get("/", middle.isLoggedIn, async (req, res, next) => {
       FROM sellog s 
       LEFT JOIN products p ON s.productId = p.id
       LEFT JOIN users u ON u.id = p.UserId
-      WHERE p.UserId = ${req.user.id};
+      WHERE s.buyerId = ${req.user.id};
     `,
       { type: QueryTypes.SELECT }
     );
+    console.log(sellLog);
     res.render("mypage", {
       title: "Market 마이페이지",
       user,
