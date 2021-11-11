@@ -43,7 +43,7 @@
                     <div>가격 : {{board.Product.price}}</div>
                     <div>남은 수량 : {{board.Product.count}}</div>
                     <div>구매 개수<input type="number" class="productCountValue" value="1" min="1"></div>
-                    <div>가진 금액 : {{board.User.money}}</div>
+                    <div>가진 금액 : {{userInfo.money}}</div>
                     <input id="buyBtn" type="button" value="구매">
                 </div>
                 {% endif %}
@@ -370,16 +370,17 @@
             const price = divs[1].innerText.replace(/[^0-9]/g, "");
             const count = divs[3].querySelector("input").value;
             axios.put("/board/buyProduct", {
+                writerId,
                 name,
                 price,
                 count
              }).then((result) => {
                 const text = result.data;
                 switch(text) {
-                    case "find Not Goods": 
-                    alert("물건을 찾을데 실패하였습니다.");
+                    case "find Not Product": 
+                    alert("물건을 찾는데 실패하였습니다.");
                     break;
-                    case "goods lack": 
+                    case "product lack": 
                     alert("물건의 수량이 부족합니다.");
                     break;
                     case "lack of money": 

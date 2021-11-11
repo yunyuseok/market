@@ -40,7 +40,7 @@ router.get("/", async (req, res, next) => {
       AND 	DATE_ADD(CURDATE(), INTERVAL(7 - DAYOFWEEK(CURDATE())) DAY)
       GROUP BY b.id
       HAVING rCount > 0
-      ORDER BY rCount DESC
+      ORDER BY rCount DESC, b.id DESC
       LIMIT 10;`,
       { type: QueryTypes.SELECT }
     );

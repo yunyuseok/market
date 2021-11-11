@@ -41,7 +41,7 @@ router.get("/board/:id", async (req, res, next) => {
       include: [
         {
           model: User,
-          attributes: ["id", "nick", "money"],
+          attributes: ["id", "nick"],
         },
         {
           model: Recommend,
@@ -63,7 +63,12 @@ router.get("/board/:id", async (req, res, next) => {
         "UserId",
       ],
     });
-    console.log(board);
+
+    const userInfo = await User.findOne({
+      where: { id: req.user.id },
+      attributes: ["id", "nick", "money"],
+    });
+
     const images = await Image.findAll({
       where: { BoardId: req.params.id },
     });
@@ -98,6 +103,7 @@ router.get("/board/:id", async (req, res, next) => {
       images,
       recommend,
       comments,
+      userInfo,
     });
   } catch (err) {
     console.error(err);

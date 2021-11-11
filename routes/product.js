@@ -6,11 +6,11 @@ const middle = require("./middleware");
 router.put("/buyProduct", middle.isLoggedIn, async (req, res, next) => {
   try {
     const name = decodeURIComponent(req.body.name);
-    const { price, count } = req.body;
+    const { writerId, price, count } = req.body;
 
     const findProduct = await Product.findOne({
       where: {
-        UserId: req.user.id,
+        UserId: writerId,
         name,
         price,
       },
