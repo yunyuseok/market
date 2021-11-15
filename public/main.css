@@ -689,6 +689,14 @@ body {
   display: none;
 }
 
+#MypageInfo #map {
+  margin-top: 20px;
+}
+
+#MypageInfo #addressAmendText {
+  width: 500px;
+}
+
 #MypagePurchaseProduct table {
   width: 100%;
   border-top: 1px solid #444444;

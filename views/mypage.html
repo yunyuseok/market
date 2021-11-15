@@ -103,7 +103,12 @@
                         <tr>
                             <td>주소 수정</td>
                             <td>
+                                <br>
                                 <input id="addressAmendText" type="text">
+                                <input id="searchMapBtn" type="button" value="찾기">
+                                <div id="map" style="width:500px;height:400px;"></div>
+                                <br>
+                                <input id="mapCurPos" type="button" value="내위치">
                                 <input id="addressAmendBtn" type="button" value="수정하기">
                             </td>
                         </tr>
@@ -129,7 +134,8 @@
                             <td>
                                 <select class="productList" name="product">
                                     {% for product in user.Products %}
-                                    <option value="product.name">{{product.name}} / {{product.price}}원 / {{product.count}}개
+                                    <option value="product.name">{{product.name}} / {{product.price}}원 /
+                                        {{product.count}}개
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -163,6 +169,8 @@
 {% endblock %}
 
 {% block script %}
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=b49fbe31942ba864986e6676ddb1cc1a&libraries=services"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=b49fbe31942ba864986e6676ddb1cc1a"></script>
 <script>
     function setDate(item) {
         let time = new Date(item.innerHTML);
@@ -175,6 +183,12 @@
 
     // 초기세팅
     (() => {
+        let map = null;
+        // 주소-좌표 변환 객체를 생성합니다
+        const geocoder = new kakao.maps.services.Geocoder(); // 주소 좌표 변환 객체;
+        const searchMapBtn = document.querySelector("#searchMapBtn");
+
+
         const kinds = document.querySelectorAll(".board-kind");
         const dates = document.querySelectorAll(".board-date");
         const board = document.querySelectorAll("#MypageHead .select")[0];
@@ -189,6 +203,8 @@
         const addMoneyBtn = document.querySelector("#addMoneyBtn");
         const addProductBtn = document.querySelector("#productBtn");
         const productDeleteBtn = document.querySelector("#productDeleteBtn");
+
+        const mapCurPosBtn = document.querySelector("#mapCurPos");
 
         for (kind of kinds) {
             kind.innerHTML = kind.innerHTML === "sell" ? "판매" : "리뷰";
@@ -324,6 +340,64 @@
             })
         }
 
+        if (mapCurPosBtn) {
+            mapCurPosBtn.addEventListener("click", (event) => {
+                navigator.geolocation.getCurrentPosition(getCurrentPos, locationLoadError);
+            })
+        }
+
+        if (searchMapBtn) {
+            searchMapBtn.addEventListener("click", (event) => {
+                const addressValue = document.querySelector("#addressAmendText").value;
+                geocoder.addressSearch(addressValue, function (result, status) {
+                    // 정상적으로 검색이 완료됐으면 
+                    if (status === kakao.maps.services.Status.OK) {
+                        const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+                        // 결과값으로 받은 위치를 마커로 표시합니다
+                        var marker = new kakao.maps.Marker({
+                            map,
+                            position: coords
+                        });
+                        // 지도의 중심을 결과값으로 받은 위치로 이동시킵니다
+                        map.setCenter(coords);
+                    } else {
+                        alert("잘못된 주소를 기입하셨습니다.");
+                    }
+                });
+            });
+        }
+
+        function createMap() {
+            let container = document.getElementById('map'); //지도를 담을 영역의 DOM 레퍼런스
+            let options = { //지도를 생성할 때 필요한 기본 옵션
+                center: new kakao.maps.LatLng(33.450701, 126.570667), //지도의 중심좌표.
+                level: 3 //지도의 레벨(확대, 축소 정도)
+            };
+            map = new kakao.maps.Map(container, options); //지도 생성 및 객체 리턴
+        };
+
+        function getCurrentPos(pos) {
+            // 현재 위치 받아오기
+            let currentPos = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+
+            // 지도 이동(기존 위치와 가깝다면 부드럽게 이동)
+            map.panTo(currentPos);
+
+            // 마커 생성
+            var marker = new kakao.maps.Marker({
+                position: currentPos
+            });
+
+            // 기존에 마커가 있다면 제거
+            marker.setMap(null);
+            marker.setMap(map);
+        };
+
+        function locationLoadError(pos) {
+            alert('위치 정보를 가져오는데 실패했습니다.');
+        };
+
+        setTimeout(map = createMap, 1000);
     })();
 
 </script>

@@ -34,7 +34,6 @@ router.get("/", middle.isLoggedIn, async (req, res, next) => {
     `,
       { type: QueryTypes.SELECT }
     );
-    console.log(sellLog);
     res.render("mypage", {
       title: "Market 마이페이지",
       user,
